@@ -7,6 +7,7 @@ import chalk from "chalk";
 import { createInterface } from "readline";
 import {
   saveApiKey,
+  saveTokens,
   deleteCredentials,
   hasCredentials,
   isKeyringAvailable,
@@ -52,7 +53,23 @@ authCommand
         { successMessage: "Authentication successful!" }
       );
 
-      // Save credentials
+      // Persist OAuth tokens so `hopx auth status` reports authenticated
+      // and subsequent commands that need an access token can read it.
+      // The WorkOS flow returns an access_token (always), refresh_token
+      // (optional), and expires_at (optional unix timestamp).
+      if (result.accessToken) {
+        await saveTokens(
+          {
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+            expiresAt: result.expiresAt,
+          },
+          options.profile
+        );
+      }
+
+      // Legacy path: if the flow ever returns an apiKey directly (it
+      // doesn't today, but the OAuthResult shape supports it), save it.
       if (result.apiKey) {
         await saveApiKey(result.apiKey, options.profile);
         success(`API key saved to profile: ${options.profile}`);
