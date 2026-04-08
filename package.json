@@ -1,0 +1,73 @@
+{
+  "name": "@hopx-ai/cli",
+  "version": "0.1.0",
+  "description": "Official CLI for Hopx.ai cloud sandboxes",
+  "type": "module",
+  "bin": {
+    "hopx": "./bin/hopx.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "build:node": "bun build ./src/index.ts --outdir ./dist --target node",
+    "build:bin": "bun run scripts/build-binaries.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "hopx",
+    "hopx-ai",
+    "cli",
+    "sandbox",
+    "vm",
+    "microvm",
+    "cloud",
+    "ai-agents"
+  ],
+  "author": "HOPX.AI <support@hopx.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hopx-ai/hopx.git",
+    "directory": "cli-bun"
+  },
+  "bugs": {
+    "url": "https://github.com/hopx-ai/hopx/issues"
+  },
+  "homepage": "https://hopx.ai",
+  "dependencies": {
+    "@hopx-ai/sdk": "^0.3.8",
+    "commander": "^12.1.0",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5",
+    "ora": "^8.1.0",
+    "yaml": "^2.5.0",
+    "open": "^10.1.0",
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
+}
