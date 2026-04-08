@@ -9,6 +9,7 @@ import { withErrorHandler, CLIError, ExitCode } from "../lib/errors.js";
 import { success, info, error as errorMsg } from "../lib/output/progress.js";
 import { output } from "../lib/output/index.js";
 import { getOutputFormat } from "../lib/config.js";
+import { VERSION } from "../version.js";
 
 export const systemCommand = new Command("system")
   .description("System health and metrics");
@@ -88,9 +89,7 @@ systemCommand
   .description("Show CLI and API versions")
   .action(
     withErrorHandler(async () => {
-      // Get CLI version from package.json
-      const pkg = await import("../../package.json");
-      const cliVersion = pkg.version;
+      const cliVersion = VERSION;
 
       // Get API version
       const baseUrl = getBaseUrl();

@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
  * Hopx CLI - Official command-line interface for Hopx.ai cloud sandboxes
  *
@@ -6,7 +6,7 @@
  */
 
 import { Command } from "commander";
-import { version } from "../package.json";
+import { VERSION } from "./version.js";
 
 // Command imports
 import { authCommand } from "./commands/auth.js";
@@ -32,7 +32,7 @@ const program = new Command();
 program
   .name("hopx")
   .description("Official CLI for Hopx.ai cloud sandboxes")
-  .version(version, "-v, --version", "Display version number")
+  .version(VERSION, "-v, --version", "Display version number")
   .option("--api-key <key>", "API key for authentication")
   .option("--profile <name>", "Configuration profile to use", "default")
   .option("-o, --output <format>", "Output format: table, json, plain", "table")
