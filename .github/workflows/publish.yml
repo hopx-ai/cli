@@ -90,11 +90,15 @@ jobs:
   publish-npm:
     needs: build-and-upload
     runs-on: ubuntu-latest
-    # Only run if the NPM_TOKEN secret is actually set. Without this
-    # guard, first-time setups with no secret configured would fail
-    # noisily every release.
+    # Only run after build-and-upload succeeds. The NPM_TOKEN check
+    # inside the job lets this degrade gracefully when the secret is
+    # not configured (e.g. during initial repo setup).
+    #
+    # A GitHub environment (e.g. `environment: npm`) can be added
+    # later via repo Settings → Environments once secrets and approval
+    # rules are defined. It is intentionally omitted on the first
+    # release to avoid an unresolved-environment failure.
     if: ${{ needs.build-and-upload.result == 'success' }}
-    environment: npm
     steps:
       - uses: actions/checkout@v4
 
