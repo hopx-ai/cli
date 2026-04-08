@@ -14,16 +14,66 @@ bun install -g @hopx-ai/cli
 
 ### Standalone Binary (recommended)
 
-Single-binary install, no Node.js or Bun runtime required.
+Single-binary install, no Node.js or Bun runtime required. The
+installer auto-detects your platform, downloads the matching binary,
+verifies its SHA256 checksum, and adds it to your `PATH`.
+
+#### macOS / Linux
 
 ```bash
-# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/hopx-ai/cli/main/install.sh | bash
 ```
 
-Windows: download the matching binary from the
-[latest release](https://github.com/hopx-ai/cli/releases/latest) and add it
-to your `PATH`.
+#### Windows
+
+There are three ways to install on Windows, depending on your shell.
+
+**WSL, Git Bash, or MSYS2 (easiest)** — the same installer works:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/hopx-ai/cli/main/install.sh | bash
+```
+
+In Git Bash this installs the real Windows `.exe` to
+`C:\Users\<you>\.hopx\bin\hopx.exe`. In WSL you get the Linux binary.
+
+**Native PowerShell** — run the following in an elevated or normal
+PowerShell prompt:
+
+```powershell
+$ErrorActionPreference = "Stop"
+$version = "cli-v0.2.0"
+$dir     = "$env:USERPROFILE\.hopx\bin"
+$url     = "https://github.com/hopx-ai/cli/releases/download/$version/hopx-windows-x64.exe"
+$sumsUrl = "https://github.com/hopx-ai/cli/releases/download/$version/SHA256SUMS"
+
+New-Item -ItemType Directory -Force -Path $dir | Out-Null
+Invoke-WebRequest -Uri $url -OutFile "$dir\hopx.exe"
+
+# Verify SHA256 checksum
+$expected = ((Invoke-WebRequest $sumsUrl).Content -split "`n" |
+  Select-String "hopx-windows-x64.exe").ToString().Split()[0]
+$actual = (Get-FileHash "$dir\hopx.exe" -Algorithm SHA256).Hash.ToLower()
+if ($expected -ne $actual) { throw "checksum mismatch" }
+
+# Add to user PATH (persistent)
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$dir*") {
+  [Environment]::SetEnvironmentVariable("Path", "$userPath;$dir", "User")
+}
+
+Write-Host "Installed. Open a new terminal and run: hopx --version"
+```
+
+**Manual download** — grab `hopx-windows-x64.exe` from the
+[latest release](https://github.com/hopx-ai/cli/releases/latest), rename
+it to `hopx.exe`, place it anywhere on your `PATH` (e.g.
+`C:\Users\<you>\.hopx\bin\`), and update your user PATH environment
+variable.
+
+> A one-liner `install.ps1` (`irm https://... | iex`) is planned for a
+> future release. Until then the PowerShell snippet above is the
+> recommended native-Windows path.
 
 ## Migrating from the Python CLI (`hopx-cli` on PyPI)
 
