@@ -12,7 +12,8 @@ import {
   hasCredentials,
   isKeyringAvailable,
 } from "../lib/auth/credentials.js";
-import { startOAuthLogin } from "../lib/auth/oauth.js";
+import { startOAuthLogin, DEFAULT_PROVIDER } from "../lib/auth/oauth.js";
+import { fetchProvidersWithFallback, pickProvider } from "../lib/auth/providers.js";
 import { getAuthStatus, requireApiKey, isValidApiKeyFormat } from "../lib/auth/token.js";
 import { withErrorHandler, CLIError, ExitCode } from "../lib/errors.js";
 import { success, info, warn, error, withSpinner } from "../lib/output/progress.js";
@@ -27,9 +28,14 @@ authCommand
   .command("login")
   .description("Authenticate with Hopx")
   .option("--api-key <key>", "Use API key directly instead of browser login")
+  .option(
+    "--provider <provider>",
+    "OAuth provider ID (e.g. GoogleOAuth, GitHubOAuth, MicrosoftOAuth). " +
+      "If omitted, the CLI fetches the list from the server and prompts."
+  )
   .option("-p, --profile <name>", "Profile to save credentials to", "default")
   .action(
-    withErrorHandler(async (options: { apiKey?: string; profile: string }) => {
+    withErrorHandler(async (options: { apiKey?: string; provider?: string; profile: string }) => {
       if (options.apiKey) {
         // Direct API key login
         if (!isValidApiKeyFormat(options.apiKey)) {
@@ -47,9 +53,30 @@ authCommand
         : "Credentials will be stored in ~/.hopx/credentials.yaml"
       );
 
+      // Determine which OAuth provider to use.
+      //
+      //  1. --provider wins (for scripts and users who know their IdP)
+      //  2. Otherwise, if we're on a TTY, fetch the list from
+      //     GET /auth/providers and show a terminal picker
+      //  3. Otherwise (piped, CI, no TTY), fall back to the default
+      //     silently so non-interactive usage still works
+      let provider: string;
+      if (options.provider) {
+        provider = options.provider;
+      } else if (process.stdin.isTTY) {
+        const baseUrl = getBaseUrl(options.profile);
+        const { providers, fromServer } = await fetchProvidersWithFallback(baseUrl);
+        if (!fromServer) {
+          warn("Could not fetch the provider list from the server; using a built-in fallback.");
+        }
+        provider = await pickProvider(providers);
+      } else {
+        provider = DEFAULT_PROVIDER;
+      }
+
       const result = await withSpinner(
         "Waiting for browser authentication...",
-        () => startOAuthLogin(),
+        () => startOAuthLogin(provider),
         { successMessage: "Authentication successful!" }
       );
 

@@ -29,10 +29,14 @@ const CLI_CLIENT_ID = "client_01K8REAP8X81GX10ZGTZKNRFMT";
 const OAUTH_CALLBACK_HOST = "127.0.0.1";
 const OAUTH_CALLBACK_PORT = 39123;
 
-// Allowed providers, matching Python's ALLOWED_PROVIDERS.
-const ALLOWED_PROVIDERS = ["GoogleOAuth", "GitHubOAuth", "MicrosoftOAuth"] as const;
-type Provider = (typeof ALLOWED_PROVIDERS)[number];
-const DEFAULT_PROVIDER: Provider = "GoogleOAuth";
+// Provider IDs are WorkOS connection identifiers like "GoogleOAuth",
+// "GitHubOAuth", "MicrosoftOAuth", "GitLabOAuth", and future additions
+// (SAML SSO, Okta, etc.). The authoritative list lives on the server
+// and is fetched by providers.ts via GET /auth/providers, so we do NOT
+// whitelist here — an unknown provider string just gets passed through
+// to WorkOS, which will return an error if it isn't configured.
+export type Provider = string;
+export const DEFAULT_PROVIDER: Provider = "GoogleOAuth";
 
 interface OAuthResult {
   accessToken: string;
@@ -121,12 +125,6 @@ async function exchangeCodeForToken(
 export async function startOAuthLogin(
   provider: Provider = DEFAULT_PROVIDER
 ): Promise<OAuthResult> {
-  if (!ALLOWED_PROVIDERS.includes(provider)) {
-    throw new Error(
-      `Invalid provider '${provider}'. Must be one of: ${ALLOWED_PROVIDERS.join(", ")}`
-    );
-  }
-
   const state = randomBytes(32).toString("base64url");
   const redirectUri = `http://${OAUTH_CALLBACK_HOST}:${OAUTH_CALLBACK_PORT}/callback`;
 

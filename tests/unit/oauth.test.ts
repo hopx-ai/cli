@@ -40,4 +40,14 @@ describe("OAuth URL construction", () => {
     // The raw query string must percent-encode the redirect URI.
     expect(raw).toContain("redirect_uri=http%3A%2F%2F127.0.0.1%3A39123%2Fcallback");
   });
+
+  it("passes non-default providers through unchanged", () => {
+    // The provider list is server-driven (GET /auth/providers), so the
+    // CLI must not whitelist-validate — any string the user picks or
+    // --provider supplies gets forwarded to WorkOS verbatim.
+    for (const provider of ["GitHubOAuth", "MicrosoftOAuth", "GitLabOAuth", "OktaSAML"]) {
+      const url = new URL(buildWorkOSAuthUrl({ ...fixture, provider }));
+      expect(url.searchParams.get("provider")).toBe(provider);
+    }
+  });
 });
