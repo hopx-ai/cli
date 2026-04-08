@@ -2,6 +2,66 @@
 
 All notable changes to the Hopx CLI are documented here.
 
+## [0.2.2] — Complete `auth login`: token persistence and provider picker
+
+0.2.1 fixed the 404 on `hopx auth login` so the browser flow could
+complete, but the tokens the backend returned were dropped instead
+of being saved, and the CLI hardcoded Google as the only identity
+provider. 0.2.2 finishes the job.
+
+### Fixed
+
+- **`hopx auth login` now actually persists credentials.** After a
+  successful OAuth round-trip, the CLI writes the returned
+  `access_token`, `refresh_token`, and `expires_at` to the keyring
+  (or to `~/.hopx/credentials.yaml` when the keyring is unavailable)
+  via the same helpers the Python CLI uses. `hopx auth status` now
+  reports "Authenticated" immediately after login, and commands that
+  need an access token can read it without a second round-trip.
+
+### Added
+
+- **`--provider` flag** for `hopx auth login`. Accepts any WorkOS
+  connection identifier — `GoogleOAuth`, `GitHubOAuth`,
+  `MicrosoftOAuth`, `GitLabOAuth`, or anything the backend exposes.
+  Matches the Python CLI's `--provider` for parity. Use in scripts
+  or CI where you know which identity provider to use:
+
+  ```
+  hopx auth login --provider GitHubOAuth
+  ```
+
+- **Interactive provider picker** when `--provider` is omitted in a
+  TTY. The CLI calls `GET /auth/providers` (no auth required) to
+  fetch the list of configured identity providers from the backend
+  and shows a numbered prompt. The list is server-driven, so new
+  providers added on the Hopx backend appear in the picker without
+  a CLI release. If the server is unreachable, the CLI falls back
+  to a static list (Google, GitHub, Microsoft) with a warning.
+
+- **Non-interactive fallback**. When there is no TTY (piped stdin,
+  CI environments) and `--provider` is not passed, the CLI silently
+  defaults to `GoogleOAuth`. Matches previous behavior and keeps
+  existing scripts working unchanged.
+
+### Changed
+
+- The internal `Provider` type in `src/lib/auth/oauth.ts` was relaxed
+  from a whitelist union (`"GoogleOAuth" | "GitHubOAuth" | ...`) to
+  `string`. The CLI no longer validates provider IDs client-side —
+  the server's `/auth/providers` response is authoritative, and
+  WorkOS returns an error if an unknown provider slips through. This
+  is an internal change; no user-visible behavior difference except
+  that providers the CLI did not previously know about are now
+  accepted.
+
+### Known issue
+
+- The interactive picker is not yet covered by CI. Its logic is a
+  minimal readline-based numbered prompt with unit tests on the
+  fetch half; the TTY half would need a PTY harness which is tracked
+  for a later release.
+
 ## [0.2.1] — Fix broken `auth login`
 
 Bugfix release. `hopx auth login` in 0.2.0 was non-functional: it
