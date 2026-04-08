@@ -12,15 +12,30 @@ npm install -g @hopx-ai/cli
 bun install -g @hopx-ai/cli
 ```
 
-### Standalone Binary
+### Standalone Binary (recommended)
+
+Single-binary install, no Node.js or Bun runtime required.
 
 ```bash
 # macOS / Linux
-curl -fsSL https://hopx.ai/install.sh | bash
-
-# Windows (PowerShell)
-irm https://hopx.ai/install.ps1 | iex
+curl -fsSL https://raw.githubusercontent.com/hopx-ai/cli/main/install.sh | bash
 ```
+
+Windows: download the matching binary from the
+[latest release](https://github.com/hopx-ai/cli/releases/latest) and add it
+to your `PATH`.
+
+## Migrating from the Python CLI (`hopx-cli` on PyPI)
+
+If you previously installed the Python CLI via `pip`, `pipx`, or `uv`:
+
+1. Install the new binary with the curl command above.
+2. Uninstall the Python package: `pipx uninstall hopx-cli` (or
+   `uv tool uninstall hopx-cli`, or `pip uninstall hopx-cli`).
+3. Your `~/.hopx/config.yaml` is preserved and works unchanged.
+4. Credentials are **automatically migrated** from the OS keyring on
+   first run — you do not need to re-authenticate. Set
+   `HOPX_NO_MIGRATE=1` to opt out.
 
 ## Quick Start
 
@@ -220,7 +235,8 @@ bun run build:bin
 - Website: https://hopx.ai
 - Documentation: https://docs.hopx.ai/cli
 - Dashboard: https://hopx.ai/dashboard
-- GitHub: https://github.com/hopx-ai/hopx
+- GitHub: https://github.com/hopx-ai/cli
+- Changelog: [CHANGELOG.md](./CHANGELOG.md)
 
 ## License
 

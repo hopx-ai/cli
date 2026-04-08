@@ -25,6 +25,7 @@ import { profileCommand } from "./commands/profile.js";
 import { membersCommand } from "./commands/members.js";
 import { billingCommand } from "./commands/billing.js";
 import { usageCommand } from "./commands/usage.js";
+import { selfUpdateCommand } from "./commands/self_update.js";
 
 // Create the main program
 const program = new Command();
@@ -69,6 +70,7 @@ program.addCommand(profileCommand);
 program.addCommand(membersCommand);
 program.addCommand(billingCommand);
 program.addCommand(usageCommand);
+program.addCommand(selfUpdateCommand);
 
 // Parse arguments and run
 program.parse();
