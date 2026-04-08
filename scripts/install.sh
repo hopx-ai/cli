@@ -1,10 +1,14 @@
 #!/bin/bash
 # Hopx CLI installer script
-# Usage: curl -fsSL https://hopx.ai/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/hopx-ai/cli/main/install.sh | bash
+#
+# Environment variables:
+#   HOPX_INSTALL_DIR     Install directory (default: $HOME/.hopx/bin)
+#   HOPX_SKIP_CHECKSUM   Skip SHA256 verification (not recommended)
 
 set -e
 
-REPO="hopx-ai/hopx"
+REPO="hopx-ai/cli"
 INSTALL_DIR="${HOPX_INSTALL_DIR:-$HOME/.hopx/bin}"
 BINARY_NAME="hopx"
 
@@ -47,43 +51,96 @@ detect_platform() {
     echo "${os}-${arch}"
 }
 
-# Get latest release version
-get_latest_version() {
+# Get latest release tag (e.g. "cli-v0.2.0"). The new repo uses the
+# cli-v* tag prefix for CLI releases.
+get_latest_tag() {
     curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | \
         grep '"tag_name":' | \
-        sed -E 's/.*"v([^"]+)".*/\1/'
+        head -n1 | \
+        sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/'
+}
+
+# Verify SHA256 checksum. Takes the path to the downloaded binary and
+# the expected filename (for matching against SHA256SUMS).
+verify_checksum() {
+    local binary_path="$1"
+    local binary_filename="$2"
+    local sums_file="$3"
+
+    if [ "${HOPX_SKIP_CHECKSUM:-}" = "1" ]; then
+        warn "Skipping checksum verification (HOPX_SKIP_CHECKSUM=1)"
+        return 0
+    fi
+
+    # Extract the expected hash for our binary
+    local expected_hash
+    expected_hash=$(grep " ${binary_filename}\$" "$sums_file" | awk '{print $1}')
+
+    if [ -z "$expected_hash" ]; then
+        error "No checksum found for ${binary_filename} in SHA256SUMS"
+    fi
+
+    # Compute the actual hash (shasum on macOS, sha256sum on Linux)
+    local actual_hash
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual_hash=$(sha256sum "$binary_path" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual_hash=$(shasum -a 256 "$binary_path" | awk '{print $1}')
+    else
+        warn "Neither sha256sum nor shasum available; skipping checksum"
+        return 0
+    fi
+
+    if [ "$expected_hash" != "$actual_hash" ]; then
+        error "Checksum mismatch for ${binary_filename} (expected ${expected_hash}, got ${actual_hash})"
+    fi
+
+    info "Checksum verified"
 }
 
 # Download and install binary
 install_binary() {
     local platform="$1"
-    local version="${2:-latest}"
+    local tag="${2:-latest}"
 
-    if [ "$version" = "latest" ]; then
-        version=$(get_latest_version)
-        if [ -z "$version" ]; then
-            error "Could not determine latest version"
+    if [ "$tag" = "latest" ]; then
+        tag=$(get_latest_tag)
+        if [ -z "$tag" ]; then
+            error "Could not determine latest release tag"
         fi
     fi
 
-    local binary_name="hopx-${platform}"
+    local binary_filename="hopx-${platform}"
     if [ "$platform" = "windows-x64" ]; then
-        binary_name="${binary_name}.exe"
+        binary_filename="${binary_filename}.exe"
     fi
 
-    local download_url="https://github.com/${REPO}/releases/download/v${version}/cli-bun-${binary_name}"
+    local base_url="https://github.com/${REPO}/releases/download/${tag}"
+    local download_url="${base_url}/${binary_filename}"
+    local sums_url="${base_url}/SHA256SUMS"
 
-    info "Downloading Hopx CLI v${version} for ${platform}..."
+    info "Downloading Hopx CLI ${tag} for ${platform}..."
 
     # Create install directory
     mkdir -p "$INSTALL_DIR"
 
-    # Download binary
-    local temp_file=$(mktemp)
-    if ! curl -fsSL "$download_url" -o "$temp_file"; then
-        rm -f "$temp_file"
+    # Download binary to temp file
+    local temp_binary
+    temp_binary=$(mktemp)
+    if ! curl -fsSL "$download_url" -o "$temp_binary"; then
+        rm -f "$temp_binary"
         error "Failed to download binary from ${download_url}"
     fi
+
+    # Download checksums file
+    local temp_sums
+    temp_sums=$(mktemp)
+    if curl -fsSL "$sums_url" -o "$temp_sums"; then
+        verify_checksum "$temp_binary" "$binary_filename" "$temp_sums"
+    else
+        warn "Could not download SHA256SUMS from ${sums_url}; skipping verification"
+    fi
+    rm -f "$temp_sums"
 
     # Move to install directory
     local install_path="${INSTALL_DIR}/${BINARY_NAME}"
@@ -91,7 +148,7 @@ install_binary() {
         install_path="${install_path}.exe"
     fi
 
-    mv "$temp_file" "$install_path"
+    mv "$temp_binary" "$install_path"
     chmod +x "$install_path"
 
     info "Installed to ${install_path}"
@@ -155,12 +212,13 @@ main() {
     echo "Hopx CLI Installer"
     echo ""
 
-    local platform=$(detect_platform)
-    local version="${1:-latest}"
+    local platform
+    platform=$(detect_platform)
+    local tag="${1:-latest}"
 
     info "Detected platform: ${platform}"
 
-    install_binary "$platform" "$version"
+    install_binary "$platform" "$tag"
     setup_path
     verify_install
 }

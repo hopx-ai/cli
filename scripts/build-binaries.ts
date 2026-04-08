@@ -4,8 +4,9 @@
  */
 
 import { $ } from "bun";
-import { mkdirSync, existsSync } from "fs";
-import { join } from "path";
+import { createHash } from "crypto";
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from "fs";
+import { join, basename } from "path";
 
 const DIST_DIR = "./dist/bin";
 const ENTRY_POINT = "./src/index.ts";
@@ -37,6 +38,25 @@ async function buildBinary(target: Target): Promise<boolean> {
     console.error(`  ✗ Failed to build ${target.name}:`, error);
     return false;
   }
+}
+
+/**
+ * Generate a SHA256SUMS file for all successfully built binaries.
+ * Format matches `sha256sum`/`shasum -a 256` output: "<hex>  <filename>"
+ * so that downstream tooling (including install.sh) can consume it
+ * with standard tools.
+ */
+function writeChecksums(builtTargets: Target[]): void {
+  const lines: string[] = [];
+  for (const target of builtTargets) {
+    const binaryPath = join(DIST_DIR, target.outputName);
+    if (!existsSync(binaryPath)) continue;
+    const hash = createHash("sha256").update(readFileSync(binaryPath)).digest("hex");
+    lines.push(`${hash}  ${basename(target.outputName)}`);
+  }
+  const sumsPath = join(DIST_DIR, "SHA256SUMS");
+  writeFileSync(sumsPath, lines.join("\n") + "\n");
+  console.log(`  ✓ SHA256SUMS (${lines.length} entries)`);
 }
 
 async function main() {
@@ -85,6 +105,12 @@ async function main() {
   console.log(`  ✓ ${successful} successful`);
   if (failed > 0) {
     console.log(`  ✗ ${failed} failed`);
+  }
+
+  // Write SHA256SUMS for successful builds (used by install.sh verification
+  // and by users who want to verify release artifacts out of band).
+  if (successful > 0) {
+    writeChecksums(results.filter((r) => r.success).map((r) => r.target));
   }
 
   console.log(`\nBinaries saved to: ${DIST_DIR}/`);
