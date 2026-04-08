@@ -1,0 +1,132 @@
+name: Publish
+
+# Triggers on cli-v* release tags. Builds standalone binaries for the
+# five supported platforms, uploads them to the release, and (if
+# NPM_TOKEN is configured) publishes @hopx-ai/cli to npm.
+#
+# The first release (cli-v0.2.0) is created manually via `gh release
+# create` with the locally-built binaries attached. This workflow is
+# idempotent when that happens: it rebuilds the binaries and uploads
+# with `gh release upload --clobber`, so manual + automated can
+# coexist on the same tag without failing.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. cli-v0.2.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write  # upload release assets
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, 'cli-v')
+    outputs:
+      tag: ${{ steps.resolve-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve release tag
+        id: resolve-tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun test
+
+      - name: Build npm bundle
+        run: bun run build
+
+      - name: Build standalone binaries (5 platforms + SHA256SUMS)
+        run: bun run build:bin
+
+      - name: List built artifacts
+        run: ls -lh dist/bin/
+
+      - name: Upload binaries to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.resolve-tag.outputs.tag }}" \
+            dist/bin/hopx-darwin-arm64 \
+            dist/bin/hopx-darwin-x64 \
+            dist/bin/hopx-linux-arm64 \
+            dist/bin/hopx-linux-x64 \
+            dist/bin/hopx-windows-x64.exe \
+            dist/bin/SHA256SUMS \
+            --clobber
+
+      - name: Upload dist as workflow artifact (for publish-npm job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            dist/index.js
+            bin/hopx.js
+            package.json
+            README.md
+            CHANGELOG.md
+
+  publish-npm:
+    needs: build-and-upload
+    runs-on: ubuntu-latest
+    # Only run if the NPM_TOKEN secret is actually set. Without this
+    # guard, first-time setups with no secret configured would fail
+    # noisily every release.
+    if: ${{ needs.build-and-upload.result == 'success' }}
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node with npm registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build npm bundle
+        run: bun run build
+
+      - name: Check if NPM_TOKEN is configured
+        id: check-token
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::NPM_TOKEN secret is not configured; skipping npm publish"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.check-token.outputs.configured == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --ignore-scripts
