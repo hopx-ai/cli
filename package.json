@@ -1,6 +1,6 @@
 {
   "name": "@hopx-ai/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Official CLI for Hopx.ai cloud sandboxes",
   "type": "module",
   "bin": {

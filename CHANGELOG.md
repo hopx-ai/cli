@@ -2,6 +2,40 @@
 
 All notable changes to the Hopx CLI are documented here.
 
+## [0.2.1] — Fix broken `auth login`
+
+Bugfix release. `hopx auth login` in 0.2.0 was non-functional: it
+opened the browser to `https://api.hopx.dev/auth/cli?callback=...`
+which returned 404, because that endpoint does not exist on the
+Hopx API. The OAuth module in the Bun port was a placeholder that
+never matched the real WorkOS-backed flow the Python CLI uses.
+
+### Fixed
+
+- **`hopx auth login`** now opens the browser to WorkOS
+  (`api.workos.com/user_management/authorize`) with the Hopx CLI's
+  public client ID, a CSRF `state` nonce, and the fixed callback
+  URI `http://127.0.0.1:39123/callback` that WorkOS has pre-
+  registered for the CLI application. After the user authenticates,
+  the callback handler verifies `state`, extracts the authorization
+  `code`, and exchanges it for tokens via
+  `POST ${HOPX_BASE_URL}/auth/workos-callback`, matching the Python
+  CLI flow byte-for-byte.
+- A clear `EADDRINUSE` message is shown if port 39123 is already
+  bound (usually because another `hopx auth login` is running).
+- Provider-supplied error messages are HTML-escaped in the failure
+  page.
+
+### Known issue (not fixed in 0.2.1, tracked for 0.2.2)
+
+- `hopx auth login` completes the browser flow successfully but the
+  returned access/refresh tokens are not persisted yet — the login
+  handler in `src/commands/auth.ts` only stores an API key, which
+  this OAuth flow does not return. As a result, `hopx auth status`
+  will still report "not authenticated" after login. Use
+  `hopx auth login --api-key hopx_live_...` as a workaround until
+  0.2.2 lands.
+
 ## [0.2.0] — First release of the Bun rewrite
 
 The 0.2.0 release replaces the Python CLI (`hopx-cli` on PyPI) with a
