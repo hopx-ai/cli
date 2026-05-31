@@ -18,9 +18,10 @@ This is the **Hopx CLI (Bun)** - the official TypeScript/Bun-based command-line 
 cli-bun/
 ├── src/
 │   ├── index.ts              # Entry point with Commander setup
-│   ├── commands/             # All 15 command groups
+│   ├── commands/             # All 16 command groups
 │   │   ├── auth.ts           # Authentication management
 │   │   ├── sandbox.ts        # Sandbox lifecycle (alias: sb)
+│   │   ├── shell.ts          # Create sandbox + open terminal (alias: sh)
 │   │   ├── run.ts            # Code execution
 │   │   ├── files.ts          # File operations (alias: f)
 │   │   ├── cmd.ts            # Shell commands
@@ -42,6 +43,8 @@ cli-bun/
 │   │   │   ├── credentials.ts  # Keyring/file credential storage
 │   │   │   ├── oauth.ts        # Browser OAuth flow
 │   │   │   └── token.ts        # Token management
+│   │   ├── terminal/         # Interactive terminal session
+│   │   │   └── session.ts      # Shared TTY<->sandbox WebSocket plumbing
 │   │   └── output/           # Output formatting
 │   │       ├── table.ts        # Table formatter
 │   │       ├── json.ts         # JSON formatter

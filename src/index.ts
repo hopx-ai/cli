@@ -16,6 +16,7 @@ import { filesCommand } from "./commands/files.js";
 import { cmdCommand } from "./commands/cmd.js";
 import { envCommand } from "./commands/env.js";
 import { terminalCommand } from "./commands/terminal.js";
+import { shellCommand } from "./commands/shell.js";
 import { templateCommand } from "./commands/template.js";
 import { configCommand } from "./commands/config.js";
 import { systemCommand } from "./commands/system.js";
@@ -57,6 +58,7 @@ program
 program.addCommand(initCommand);
 program.addCommand(authCommand);
 program.addCommand(sandboxCommand);
+program.addCommand(shellCommand);
 program.addCommand(runCommand);
 program.addCommand(filesCommand);
 program.addCommand(cmdCommand);

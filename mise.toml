@@ -1,0 +1,6 @@
+[tools]
+bun = "latest"
+
+# Secrets (e.g. HOPX_API_KEY) live in mise.local.toml, which is gitignored so
+# the real production key never gets committed. Copy the dummy placeholder
+# there and replace it with your key.

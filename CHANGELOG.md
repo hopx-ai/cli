@@ -2,6 +2,37 @@
 
 All notable changes to the Hopx CLI are documented here.
 
+## [0.3.0] — `hopx shell`: create a sandbox and open a terminal in one step
+
+Connecting to a fresh sandbox used to take two commands: `hopx sandbox
+create`, then copy the printed ID into `hopx terminal <id>`. 0.3.0 adds a
+single command that does both.
+
+### Added
+
+- **`hopx shell` (alias `sh`)** creates a sandbox and drops straight into
+  an interactive terminal. It accepts the same provisioning options as
+  `sandbox create` — `--template`/`-t`, `--timeout`, and `--env`/`-e` — and
+  prints the sandbox ID on connect so the session is recoverable.
+
+  ```
+  hopx shell
+  hopx shell -t code-interpreter
+  hopx shell -e KEY=value --timeout 600
+  ```
+
+- **`--rm` flag** for `hopx shell` makes the sandbox ephemeral: it is killed
+  when the terminal session ends (à la `docker run --rm`). Without `--rm` the
+  sandbox keeps running after you exit and can be reattached with
+  `hopx terminal <id>`.
+
+### Changed
+
+- The interactive-terminal plumbing (stdin forwarding, resize handling, and
+  cleanup) was extracted into `src/lib/terminal/session.ts` and is now shared
+  by both `hopx terminal` and `hopx shell`. No behavior change for
+  `hopx terminal`.
+
 ## [0.2.2] — Complete `auth login`: token persistence and provider picker
 
 0.2.1 fixed the 404 on `hopx auth login` so the browser flow could
