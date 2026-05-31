@@ -8,3 +8,6 @@ coverage/
 .env.local
 .idea/
 .vscode/
+
+# mise local overrides (holds secrets like HOPX_API_KEY)
+mise.local.toml
