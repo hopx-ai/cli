@@ -53,10 +53,9 @@ PowerShell prompt:
 
 ```powershell
 $ErrorActionPreference = "Stop"
-$version = "cli-v0.2.0"
 $dir     = "$env:USERPROFILE\.hopx\bin"
-$url     = "https://github.com/hopx-ai/cli/releases/download/$version/hopx-windows-x64.exe"
-$sumsUrl = "https://github.com/hopx-ai/cli/releases/download/$version/SHA256SUMS"
+$url     = "https://github.com/hopx-ai/cli/releases/latest/download/hopx-windows-x64.exe"
+$sumsUrl = "https://github.com/hopx-ai/cli/releases/latest/download/SHA256SUMS"
 
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 Invoke-WebRequest -Uri $url -OutFile "$dir\hopx.exe"
