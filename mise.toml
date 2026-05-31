@@ -4,3 +4,7 @@ bun = "latest"
 # Secrets (e.g. HOPX_API_KEY) live in mise.local.toml, which is gitignored so
 # the real production key never gets committed. Copy the dummy placeholder
 # there and replace it with your key.
+
+[tasks.release]
+description = "Cut a cli-v<version> GitHub release from package.json (version + CHANGELOG must be prepared first)"
+run = "./scripts/release.sh"
