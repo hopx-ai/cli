@@ -66,24 +66,37 @@ export const shellCommand = new Command("shell")
         }
         console.log(chalk.gray("Press Ctrl+C to exit\n"));
 
-        await attachInteractiveTerminal(sandbox, {
-          onExit: options.rm
-            ? async () => {
-                try {
-                  await sandbox.kill();
-                  console.log(chalk.gray(`\nSandbox killed: ${sandbox.sandboxId}`));
-                } catch (err) {
-                  console.error(
-                    chalk.red(
-                      `Failed to kill sandbox ${sandbox.sandboxId}: ${
-                        err instanceof Error ? err.message : String(err)
-                      }`
-                    )
-                  );
-                }
-              }
-            : undefined,
-        });
+        // Best-effort teardown for ephemeral (`--rm`) sandboxes. Shared by the
+        // normal exit hook and the failure path below so the sandbox is never
+        // left running and billable.
+        const killSandbox = async () => {
+          try {
+            await sandbox.kill();
+            console.log(chalk.gray(`\nSandbox killed: ${sandbox.sandboxId}`));
+          } catch (err) {
+            console.error(
+              chalk.red(
+                `Failed to kill sandbox ${sandbox.sandboxId}: ${
+                  err instanceof Error ? err.message : String(err)
+                }`
+              )
+            );
+          }
+        };
+
+        try {
+          await attachInteractiveTerminal(sandbox, {
+            onExit: options.rm ? killSandbox : undefined,
+          });
+        } catch (err) {
+          // If we threw before reaching an interactive session (e.g. the
+          // terminal WebSocket failed to connect), `onExit` never ran. Honor
+          // `--rm` here so the just-created sandbox isn't leaked.
+          if (options.rm) {
+            await killSandbox();
+          }
+          throw err;
+        }
       }
     )
   );
