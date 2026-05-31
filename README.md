@@ -93,7 +93,10 @@ If you previously installed the Python CLI via `pip`, `pipx`, or `uv`:
 # First-time setup
 hopx init
 
-# Create a sandbox
+# Create a sandbox and jump straight into a terminal
+hopx shell --template python
+
+# ...or create a sandbox by itself
 hopx sandbox create --template python
 
 # Run code
@@ -113,6 +116,7 @@ hopx sandbox kill <id>
 | `init` | - | First-run setup wizard |
 | `auth` | - | Authentication management |
 | `sandbox` | `sb` | Sandbox lifecycle |
+| `shell` | `sh` | Create a sandbox and open a terminal in one step |
 | `run` | - | Execute code |
 | `files` | `f` | File operations |
 | `cmd` | - | Shell commands |
@@ -165,6 +169,25 @@ hopx sandbox resume <id>
 hopx sandbox kill <id>
 hopx sandbox kill <id> --yes  # Skip confirmation
 ```
+
+## Interactive Shell
+
+Create a sandbox and drop straight into an interactive terminal — no separate
+`create` + `terminal` steps:
+
+```bash
+# Create + connect (sandbox keeps running after you exit)
+hopx shell
+hopx shell --template code-interpreter
+hopx shell -e KEY=value --timeout 600
+
+# Ephemeral: kill the sandbox when you exit the terminal
+hopx shell --rm
+```
+
+The sandbox ID is printed on connect, so even an ephemeral session is
+recoverable until you exit. To attach to an existing sandbox instead, use
+`hopx terminal <id>`.
 
 ## Code Execution
 

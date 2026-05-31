@@ -115,6 +115,39 @@ describe("Command Structure", () => {
     });
   });
 
+  describe("shell command", () => {
+    const makeShell = () =>
+      new Command("shell")
+        .alias("sh")
+        .option("-t, --template <name>", "Template to use")
+        .option("--timeout <seconds>", "Auto-kill timeout in seconds")
+        .option("-e, --env <key=value...>", "Environment variables")
+        .option("--rm", "Kill the sandbox when the terminal session ends");
+
+    it("should have the sh alias", () => {
+      expect(makeShell().alias()).toBe("sh");
+    });
+
+    it("should accept create options and parse with no arguments", () => {
+      const shell = makeShell();
+      shell.parse(["node", "test", "-t", "python", "--timeout", "600"]);
+
+      expect(shell.args.length).toBe(0);
+      expect(shell.opts().template).toBe("python");
+      expect(shell.opts().timeout).toBe("600");
+    });
+
+    it("should default rm to undefined and set it when passed", () => {
+      const persist = makeShell();
+      persist.parse(["node", "test"]);
+      expect(persist.opts().rm).toBeUndefined();
+
+      const ephemeral = makeShell();
+      ephemeral.parse(["node", "test", "--rm"]);
+      expect(ephemeral.opts().rm).toBe(true);
+    });
+  });
+
   describe("files command", () => {
     it("should have correct subcommands", () => {
       const files = new Command("files").alias("f");
