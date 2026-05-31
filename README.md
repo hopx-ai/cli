@@ -6,11 +6,22 @@ Official command-line interface for [Hopx.ai](https://hopx.ai) cloud sandboxes.
 
 ### npm / bun
 
+Install **globally** (`-g`) to put the `hopx` command on your `PATH`:
+
 ```bash
 npm install -g @hopx-ai/cli
 # or
 bun install -g @hopx-ai/cli
+
+hopx --version
 ```
+
+> The `-g` flag is what exposes the `hopx` command. A local install
+> (`npm install @hopx-ai/cli`, without `-g`) does **not** add `hopx` to
+> your `PATH` — you'd have to run it as `npx @hopx-ai/cli` or
+> `./node_modules/.bin/hopx`. If `hopx` isn't found after a global
+> install, ensure npm's global bin dir (`npm prefix -g` + `/bin`) is on
+> your `PATH`.
 
 ### Standalone Binary (recommended)
 
@@ -42,10 +53,9 @@ PowerShell prompt:
 
 ```powershell
 $ErrorActionPreference = "Stop"
-$version = "cli-v0.2.0"
 $dir     = "$env:USERPROFILE\.hopx\bin"
-$url     = "https://github.com/hopx-ai/cli/releases/download/$version/hopx-windows-x64.exe"
-$sumsUrl = "https://github.com/hopx-ai/cli/releases/download/$version/SHA256SUMS"
+$url     = "https://github.com/hopx-ai/cli/releases/latest/download/hopx-windows-x64.exe"
+$sumsUrl = "https://github.com/hopx-ai/cli/releases/latest/download/SHA256SUMS"
 
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 Invoke-WebRequest -Uri $url -OutFile "$dir\hopx.exe"
